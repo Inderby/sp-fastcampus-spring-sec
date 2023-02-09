@@ -2,6 +2,8 @@ server:
   port: 9051
 
 spring:
+  freemarker:
+    cache: false
   devtools:
     livereload:
       enabled: true
