@@ -36,6 +36,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {//어떤 필�
                         .anyRequest().authenticated());
         http.formLogin();
         http.httpBasic();
+
+        http
+                .headers().disable() //각종 필터들일 키고 끄고 할 수 있다.
+                .csrf().disable()
+                .formLogin(login->
+                        login.defaultSuccessUrl("/", false))//로그인을 성공 했을 때 로그인 후 보여지는 화면을 설정, alwaysUse
+                //를 false로 처리해야 사용자가 편리해진다.
+                .logout().disable()
+                .requestCache().disable()
+                ;
     }
 
     @Bean
