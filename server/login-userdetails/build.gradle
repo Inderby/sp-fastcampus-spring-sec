@@ -6,6 +6,6 @@ dependencies {
     implementation project(":web-user-admin")
 
 
-    runtime "com.h2.database:h2"
+   runtime "org.h2.database:h2"
 }
 
