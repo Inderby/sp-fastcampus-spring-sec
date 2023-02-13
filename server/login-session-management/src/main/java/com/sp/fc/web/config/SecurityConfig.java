@@ -12,11 +12,18 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.builders.WebSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenBasedRememberMeServices;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+import org.springframework.security.web.authentication.session.ConcurrentSessionControlAuthenticationStrategy;
+import org.springframework.security.web.authentication.session.SessionAuthenticationStrategy;
+import org.springframework.security.web.session.ConcurrentSessionFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import javax.servlet.http.HttpSessionEvent;
@@ -26,7 +33,9 @@ import java.time.LocalDateTime;
 @EnableWebSecurity(debug = true)
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-
+    ConcurrentSessionFilter concurrentSessionFilter;
+    SessionAuthenticationStrategy sessionAuthenticationStrategy;
+    ConcurrentSessionControlAuthenticationStrategy concurrentSessionControlAuthenticationStrategy;
     private final SpUserService spUserService;
     private final DataSource dataSource;
 
@@ -74,6 +83,11 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
             }
         });
     }
+    @Bean
+    SessionRegistry sessionRegistry(){
+        SessionRegistryImpl registry = new SessionRegistryImpl();
+        return registry;
+    }
 
     @Bean
     PersistentTokenRepository tokenRepository(){
@@ -94,6 +108,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                         spUserService,
                         tokenRepository()
                         );
+        service.setAlwaysRemember(true);
         return service;
     }
 
@@ -119,12 +134,21 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .rememberMe(r->r
                         .rememberMeServices(rememberMeServices())
                 )
+                .sessionManagement(
+                        s->s
+                                .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)//세션 생성 여부에 대한 정책을 세움
+                                .sessionFixation(SessionManagementConfigurer.SessionFixationConfigurer::none) //세션을 고정하는 설정
+                                .maximumSessions(1)//둉시접속 인원 결정
+                                .maxSessionsPreventsLogin(false)//초과인원으로 동시접속시 생기는 문제 처리 방식 결정 false일 경우 새로 로그인한 사람이 session생성
+                                .expiredUrl("/session-expired")
+                )
                 ;
     }
 
     @Override
     public void configure(WebSecurity web) throws Exception {
         web.ignoring()
+                .antMatchers("/sessions", "session/expire", "/session-expired")
                 .requestMatchers(
                         PathRequest.toStaticResources().atCommonLocations(),
                         PathRequest.toH2Console()
