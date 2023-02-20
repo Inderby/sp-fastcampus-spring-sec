@@ -6,6 +6,7 @@ import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -14,8 +15,10 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.NoOpPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
@@ -26,6 +29,7 @@ import org.springframework.security.web.authentication.session.SessionAuthentica
 import org.springframework.security.web.session.ConcurrentSessionFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionEvent;
 import javax.sql.DataSource;
 import java.time.LocalDateTime;
@@ -107,7 +111,15 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 new PersistentTokenBasedRememberMeServices("hello",
                         spUserService,
                         tokenRepository()
-                        );
+
+                        ){
+                    @Override
+                    protected Authentication createSuccessfulAuthentication(HttpServletRequest request, UserDetails user) {
+                        return new UsernamePasswordAuthenticationToken(user.getUsername(),user.getPassword(),null); //rememberMeAuthenticationToken이 아니게 속이는 용도
+                        //return super.createSuccessfulAuthentication(request, user);
+                    }
+                };
+
         service.setAlwaysRemember(true);
         return service;
     }
@@ -117,6 +129,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .authorizeRequests(request->
                     request.antMatchers("/").permitAll()
+                            .antMatchers("/admin/**").hasRole("ADMIN")
                             .anyRequest().authenticated()
                 )
                 .formLogin(login->
@@ -129,7 +142,10 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .logout(logout->
                         logout.logoutSuccessUrl("/"))
                 .exceptionHandling(error->
-                        error.accessDeniedPage("/access-denied")
+                        error.accessDeniedHandler(new CustomDeniedHandler()) //둘 중 하나만 사용해야됨
+                                .authenticationEntryPoint(new CustomEntryPoint())
+                        //error.accessDeniedPage("/access-denied") //무시됨
+
                 )
                 .rememberMe(r->r
                         .rememberMeServices(rememberMeServices())
