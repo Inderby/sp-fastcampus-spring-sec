@@ -2,6 +2,7 @@ package com.sp.fc.web.config;
 
 import org.aopalliance.intercept.MethodInvocation;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDecisionManager;
 import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.annotation.Jsr250Voter;
@@ -23,7 +24,9 @@ import java.util.List;
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class MethodSecurityConfiguration extends GlobalMethodSecurityConfiguration {
 
-    @Autowired
+//    @Autowired
+
+    @Lazy // bean생성 시점을 늦추는 어노테이션
     private CustomPermissionEvaluator permissionEvaluator;
 
     @Override

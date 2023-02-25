@@ -1,5 +1,6 @@
 package com.sp.fc.web.config;
 
+import com.sp.fc.web.service.Paper;
 import lombok.Getter;
 import lombok.Setter;
 import org.aopalliance.intercept.MethodInvocation;
@@ -34,7 +35,9 @@ public class CustomMethodSecurityExpressionRoot extends SecurityExpressionRoot
                 .filter(a->a.getAuthority().equals("ROLE_TUTOR"))
                 .findAny().isPresent();
     }
-
+    public boolean notPrepareState(Paper paper){
+        return paper.getState() != Paper.State.PREPARE;
+    }
     @Override
     public Object getThis() {
         return this;
