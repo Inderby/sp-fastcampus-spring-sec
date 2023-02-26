@@ -25,7 +25,7 @@ public class PaperService implements InitializingBean {
 
     @PostFilter("notPrepareState(filterObject)") //&& filterObject.studentIds.contains(#user.username)")
     public List<Paper> getMyPapers(String username) {
-//        return paperDB.values().stream().collect(Collectors.toList());
+
         return paperDB.values().stream().filter(
                 paper -> paper.getStudentIds().contains(username)
         ).collect(Collectors.toList());
@@ -34,5 +34,9 @@ public class PaperService implements InitializingBean {
 //    @PostAuthorize("returnObject.studentIds.contains(principal.username)")
     public Paper getPaper(Long paperId) {
         return paperDB.get(paperId);
+    }
+
+    public List<Paper> getAllPapers() {
+        return paperDB.values().stream().collect(Collectors.toList());
     }
 }

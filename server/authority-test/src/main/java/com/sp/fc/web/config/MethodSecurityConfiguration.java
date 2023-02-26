@@ -10,6 +10,9 @@ import org.springframework.security.access.expression.method.DefaultMethodSecuri
 import org.springframework.security.access.expression.method.ExpressionBasedPreInvocationAdvice;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionHandler;
 import org.springframework.security.access.expression.method.MethodSecurityExpressionOperations;
+import org.springframework.security.access.intercept.RunAsManager;
+import org.springframework.security.access.intercept.RunAsManagerImpl;
+import org.springframework.security.access.method.MethodSecurityMetadataSource;
 import org.springframework.security.access.prepost.PreInvocationAuthorizationAdviceVoter;
 import org.springframework.security.access.vote.*;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
@@ -21,13 +24,25 @@ import java.util.ArrayList;
 import java.util.List;
 
 
-@EnableGlobalMethodSecurity(prePostEnabled = true)
+@EnableGlobalMethodSecurity(prePostEnabled = true, securedEnabled = true)
 public class MethodSecurityConfiguration extends GlobalMethodSecurityConfiguration {
 
 //    @Autowired
 
     @Lazy // bean생성 시점을 늦추는 어노테이션
     private CustomPermissionEvaluator permissionEvaluator;
+
+    @Override
+    protected MethodSecurityMetadataSource customMethodSecurityMetadataSource() {
+        return new CustomMetaDataSource();
+    }
+
+    @Override
+    protected RunAsManager runAsManager() {
+        RunAsManagerImpl runas = new RunAsManagerImpl();
+        runas.setKey("runas");
+        return runas;
+    }
 
     @Override
     protected MethodSecurityExpressionHandler createExpressionHandler() {
@@ -52,7 +67,7 @@ public class MethodSecurityConfiguration extends GlobalMethodSecurityConfigurati
         decisionVoters.add(new PreInvocationAuthorizationAdviceVoter(expressionAdvice));
         decisionVoters.add(new RoleVoter());
         decisionVoters.add(new AuthenticatedVoter());
-//        decisionVoters.add(new CustomVoter());
+        decisionVoters.add(new CustomVoter());
 
         return new AffirmativeBased(decisionVoters);
 //        ConsensusBased committee = new ConsensusBased(decisionVoters);
